@@ -1,0 +1,57 @@
+import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
+from fpdf import FPDF
+
+# ----------------------
+# Funkce: Vykreslení kruhu
+# ----------------------
+def vykresli_kruh(stred, polomer, pocet_bodu, barva_bodu):
+    fig, ax = plt.subplots()
+    
+    theta = np.linspace(0, 2 * np.pi, pocet_bodu, endpoint=False)
+    x = stred[0] + polomer * np.cos(theta)
+    y = stred[1] + polomer * np.sin(theta)
+
+    # Vykreslení kruhu a bodů
+    kruh = plt.Circle(stred, polomer, edgecolor='black', facecolor='none', linestyle='--')
+    ax.add_artist(kruh)
+    ax.scatter(x, y, color=barva_bodu)
+
+    # Osy
+    ax.axhline(0, color='gray', linewidth=0.5)
+    ax.axvline(0, color='gray', linewidth=0.5)
+
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_title(f"Kružnice s {pocet_bodu} body")
+
+    ax.set_aspect('equal', 'box')
+    ax.grid(True)
+
+    ax.set_xlim(stred[0] - polomer - 1, stred[0] + polomer + 1)
+    ax.set_ylim(stred[1] - polomer - 1, stred[1] + polomer + 1)
+
+    return fig
+
+# ----------------------
+# Funkce: Vytvoření PDF
+# ----------------------
+def vytvor_pdf(stred, polomer, pocet_bodu, barva_bodu, jmeno, kontakt):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Parametry úlohy", ln=True, align='C')
+
+    pdf.set_font("Arial", '', 12)
+    pdf.ln(10)
+    pdf.cell(0, 10, f"Střed kružnice: {stred}", ln=True)
+    pdf.cell(0, 10, f"Poloměr: {polomer} m", ln=True)
+    pdf.cell(0, 10, f"Počet bodů: {pocet_bodu}", ln=True)
+    pdf.cell(0, 10, f"Barva bodů: {barva_bodu}", ln=True)
+
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "Informace o vývojáři", ln=True)
+    pdf.set_font("Arial", '', 12)
+    pdf.cell(0, 10, f"Jméno: {jmeno}",
