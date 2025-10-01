@@ -129,4 +129,3 @@ def show_circle_generator():
 
         st.download_button(
 
-streamlit run app.py
