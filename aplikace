@@ -16,9 +16,30 @@ def generate_circle_points(center, radius, num_points):
     return x_points, y_points
 
 # -------------------------------------
-# FUNKCE: Vytvoření PDF výstupu
+# FUNKCE: Vykreslí figuru (vrací fig)
 # -------------------------------------
-def create_pdf(x_points, y_points, fig, params, author_info):
+def create_figure(x_points, y_points, center_x, center_y, radius, color, unit):
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.scatter(x_points, y_points, color=color, label="Body na kružnici")
+    ax.plot(center_x, center_y, 'ko', label="Střed kruhu")
+
+    ax.set_xlabel(f"X [{unit}]")
+    ax.set_ylabel(f"Y [{unit}]")
+    ax.set_aspect('equal', 'box')
+    ax.grid(True)
+    ax.legend()
+    ax.set_title("Body rovnoměrně rozložené na kružnici")
+
+    padding = radius * 1.2
+    ax.set_xlim(center_x - padding, center_x + padding)
+    ax.set_ylim(center_y - padding, center_y + padding)
+
+    return fig
+
+# -------------------------------------
+# FUNKCE: Vytvoří PDF s parametry + grafem
+# -------------------------------------
+def create_pdf(fig, params, author_info):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -34,7 +55,7 @@ def create_pdf(x_points, y_points, fig, params, author_info):
         c.drawString(50, y_pos, f"{label}: {value}")
         y_pos -= 20
 
-    # Obrázek z matplotlib fig
+    # Obrázek – uložíme z fig do paměti
     img_buffer = BytesIO()
     fig.savefig(img_buffer, format="png", dpi=150)
     img_buffer.seek(0)
@@ -42,7 +63,7 @@ def create_pdf(x_points, y_points, fig, params, author_info):
 
     c.drawImage(image, 50, y_pos - 300, width=400, preserveAspectRatio=True, mask='auto')
 
-    # Autor info
+    # Autor
     c.setFont("Helvetica-Oblique", 10)
     c.drawString(50, 40, f"Autor: {author_info['name']} | Kontakt: {author_info['contact']}")
 
@@ -71,25 +92,10 @@ def show_circle_generator():
     # Výpočet bodů
     x_points, y_points = generate_circle_points((center_x, center_y), radius, num_points)
 
-    # Vykreslení grafu
+    # Vykreslení grafu pro Streamlit
     st.header("📊 Výsledný graf")
-
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(x_points, y_points, color=color, label="Body na kružnici")
-    ax.plot(center_x, center_y, 'ko', label="Střed kruhu")  # černý bod uprostřed
-
-    ax.set_xlabel(f"X [{unit}]")
-    ax.set_ylabel(f"Y [{unit}]")
-    ax.set_aspect('equal', 'box')
-    ax.grid(True)
-    ax.legend()
-    ax.set_title("Body rovnoměrně rozložené na kružnici")
-
-    padding = radius * 1.2
-    ax.set_xlim(center_x - padding, center_x + padding)
-    ax.set_ylim(center_y - padding, center_y + padding)
-
-    st.pyplot(fig)
+    fig_streamlit = create_figure(x_points, y_points, center_x, center_y, radius, color, unit)
+    st.pyplot(fig_streamlit)
 
     # Tabulka souřadnic
     with st.expander("📋 Zobrazit souřadnice bodů"):
@@ -112,61 +118,14 @@ def show_circle_generator():
     }
 
     author_info = {
-        "name": "Tvoje jméno zde",  # ← změň dle potřeby
+        "name": "Tvoje jméno zde",
         "contact": "tvůj.email@example.com"
     }
 
     if st.button("📤 Vytvořit PDF"):
-        pdf_file = create_pdf(x_points, y_points, fig, params, author_info)
+        # Vytvoříme nový graf pro PDF (abychom nezničili Streamlit figuru)
+        fig_pdf = create_figure(x_points, y_points, center_x, center_y, radius, color, unit)
+        pdf_file = create_pdf(fig_pdf, params, author_info)
+
         st.download_button(
-            label="📥 Stáhnout PDF",
-            data=pdf_file,
-            file_name="kruznice_vystup.pdf",
-            mime="application/pdf"
-        )
 
-# -------------------------------------
-# STRÁNKA: O aplikaci
-# -------------------------------------
-def show_about():
-    st.title("ℹ️ O aplikaci")
-    st.markdown("""
-    Tato jednoduchá webová aplikace slouží k vizualizaci rovnoměrného rozmístění bodů po obvodu kružnice.
-
-    ### 👨‍💻 Autor
-    - Jméno: *Tvoje jméno zde*
-    - Kontakt: *tvůj.email@example.com*
-
-    ### 🛠️ Použité technologie
-    - **[Streamlit](https://streamlit.io/)** – jednoduchý webový framework pro Python
-    - **[NumPy](https://numpy.org/)** – matematické výpočty
-    - **[Matplotlib](https://matplotlib.org/)** – vizualizace a vykreslení grafů
-    - **[ReportLab](https://www.reportlab.com/)** – generování PDF
-
-    ### 💡 Funkce
-    - Uživatelský vstup pro parametry kružnice
-    - Vizualizace bodů na kruhu
-    - Export výsledku do PDF
-    - Možnost zobrazení číselných souřadnic
-
-    ---
-    *Vytvořeno jako demonstrace práce se Streamlit.*
-    """)
-
-# -------------------------------------
-# HLAVNÍ APLIKACE
-# -------------------------------------
-def main():
-    st.set_page_config(page_title="Kružnice – Streamlit App", layout="centered")
-
-    # Navigace
-    st.sidebar.title("📌 Navigace")
-    page = st.sidebar.radio("Vyber stránku:", ("🔵 Generátor kružnice", "ℹ️ O aplikaci"))
-
-    if page == "🔵 Generátor kružnice":
-        show_circle_generator()
-    elif page == "ℹ️ O aplikaci":
-        show_about()
-
-if __name__ == "__main__":
-    main()
